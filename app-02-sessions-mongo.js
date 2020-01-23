@@ -2,6 +2,7 @@ const express = require('express');
 const PORT = process.env.PORT || 8080;
 const body_parser = require('body-parser');
 const session = require('express-session');
+const mongoose =require('mongoose');
 
 let app = express();
 
@@ -107,4 +108,14 @@ app.use((req, res, next) => {
 
 //Shutdown server CTRL + C in terminal
 //starting server npm run start-dev
-app.listen(PORT);
+
+const mongoose_url='';
+mongoose.connect(mongoose_url,{
+    useUnifiedTopology:true,
+    useNewUrlParser:true
+
+}).then(()=>{
+    console.log('Mongoose connected');
+    console.log('Start Express server');
+    app.listen(PORT); 
+});
