@@ -4,8 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app-03-sessions-mongo-shoppingList.js",
-    "start-dev": "nodemon app-03-sessions-mongo-shoppingList.js"
+    "start": "nodemon app-02-sessions-mongo.js",
+    "start-dev": "nodemon app-02-sessions-mongo.js"
   },
   "author": "",
   "license": "ISC",
