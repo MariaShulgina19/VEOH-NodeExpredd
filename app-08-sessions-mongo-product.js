@@ -5,12 +5,34 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const product_schema = new Schema({
+    product_name: {
+        type: String,
+        required: true
+    },
+    //amount: {
+    //    type: Number,
+    //    required: true  
+   // },
+
+   // picture: {
+   //     type: jpg,
+   //     required: true  
+   // }
+
+});
 const note_schema = new Schema({
     text: {
         type: String,
         required: true
-    }
+    },
+    products: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'product',
+        req: true
+    }]
 });
+const product_model = new mongoose.model('product', product_schema);
 const note_model = new mongoose.model('note', note_schema);
 
 
@@ -83,13 +105,37 @@ app.get('/', is_logged_handler, (req, res, next) => {
                 <button type="submit">Log out</button>
             </form>`);
             user.notes.forEach((note) => {
-                res.write(note.text);
-                res.write(`
-                <form action="delete-note" method="POST">
-                    <input type="hidden" name="note_id" value="${note._id}">
-                    <button type="submit">Delete note</button>
-                </form>
-                `);
+
+                note.populate('products')
+                .execPopulate()
+                .then(() => {
+                    console.log('note:', note);
+
+
+                        res.write(note.text);
+                        res.write(`Products:`);
+                        note.products.forEach((product) => {
+
+                            res.write(product.product_name)
+                                                        });
+
+                        
+                        res.write(`
+                        <form action="add-product" method="POST">
+                                <input type="text" name="product"   >
+                                <input type="hidden" name="note_id" value="${note._id}">
+                                <button type="submit">Add product </button>
+                        </form>
+                        `);
+                        res.write(`
+                        <form action="delete-note" method="POST">
+                            <input type="hidden" name="note_id" value="${note._id}">
+                            <button type="submit">Delete note</button>
+                        </form>
+                        `);
+
+                             }); //end of populate notes.populate('products')
+                       
             });
 
             res.write(`
@@ -137,14 +183,57 @@ app.post('/add-note', (req, res, next) => {
     const user = req.user;
 
     let new_note = note_model({
-        text: req.body.note
+        text: req.body.note,
+        product: [] //new
     });
+    
+
+    
+
     new_note.save().then(() => {
         console.log('note saved');
         user.notes.push(new_note);
         user.save().then(() => {
             return res.redirect('/');
         });
+    });
+});
+app.post('/add-product', (req, res, next) => {
+    const user = req.user;
+   const note = req.body.note_id;//WE ARE HERE
+    //or 
+    //const note = req.note; 
+   // console.log('note.text', req.note_id)
+   console.log('try note', note)
+    //console.log('note_id', note_id)
+
+  //  const note_id_to_add_product = req.body.note_id;
+  //  console.log('note_id', req.body.note_id)
+    let new_product = product_model({
+        //after this to change
+        product_name:req.body.product //присваивает имя продукта с input text
+        
+    });
+    console.log('new product', new_product)
+    new_product.save().then(() => {
+        console.log('product saved');
+        console.log('try note', note);
+         //added tha last
+      // note_model.findById(note_id_to_add_product).then((note) => {
+            note.products.push(new_product);
+            note.save().then(() => {
+           // console.log('note', note)
+           return res.redirect('/');
+
+            });
+       // });
+        //note.products.push(new_product); //does not work ..ca
+        //note.save();
+        //user.save().then(() => {
+       // note.save().then(() => {
+            
+       // });
+        //});
     });
 });
 
