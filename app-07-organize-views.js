@@ -11,11 +11,12 @@ const Schema = mongoose.Schema;
 const user_model = require('./models/user_model.js');
 const note_model = require('./models/note_model.js');
 
-
 //Views
 
 const note_views = require('./views/note-views.js');
 const auth_views = require('./views/auth-views.js');
+
+
 
 let app = express();
 
@@ -71,7 +72,7 @@ app.get('/', is_logged_handler, (req, res, next) => {
             };                                  //new
             let html = note_views.notes_view(data);//new
             console.log('html:', html) //new
-            res.send();
+            res.send(html);
         });
 });
 

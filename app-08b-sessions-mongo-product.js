@@ -44,7 +44,14 @@ const user_schema = new Schema({
     notes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'note',
-        req: true
+        req: true,
+        
+        products: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'product',
+            req: true
+        }]
+        
     }]
 });
 const user_model = mongoose.model('user', user_schema);
@@ -88,6 +95,19 @@ app.use((req, res, next) => {
     }).catch((err) => {
         console.log(err);
         res.redirect('login');
+    });
+});
+// new
+app.use((req, res, next) => {
+    if (!req.session.note) {
+        return next();
+    }
+    note_model.findById(req.session.note._id).then((note) => {
+        req.note = note;
+        next();
+    }).catch((err) => {
+        console.log(err);
+        res.redirect('/');
     });
 });
 
@@ -174,8 +194,40 @@ app.get('/note/:id', (req, res, next) => {
     const note_id = req.params.id;
     note_model.findOne({
         _id: note_id
-    }).then((note) => {
-        res.send(note.text);
+     }).then((note) => {
+          req.note = note;
+        console.log ('inside the note')
+        res.write(`
+        <html>
+        <body>
+        Hello you!   `);
+        //
+        note.populate('products')
+                .execPopulate()
+                .then(() => {
+                    console.log(' here is note:', note);
+
+                    res.write(` Note: ${note.text}`)
+
+                   
+                    res.write(`   Your Products:`);
+                    note.products.forEach((product) => {
+
+                        res.write(product.product_name)
+                                                   });
+                 res.write(`
+                    
+                        <form action="add-product" method="POST">
+                                <input type="text" name="product"   >
+                            <button type="submit">Add product </button>
+                        </form>
+                    
+                    </body>
+                    </html>
+                    `);
+        //            
+        res.end()
+        });
     });
 });
 
@@ -199,37 +251,17 @@ app.post('/add-note', (req, res, next) => {
     });
 });
 
-app.post('/add-product', (req, res, next) => {
-    const user = req.user;
-    //how to identify write note??
-   const note_id_prod = req.body.note_id_prod;//if to use it is crushing
+app.post('/note/add-product', (req, res, next) => {
+    //const user = req.user;
+    const note= req.note;
+  // const note_id_prod = req.body.note_id_prod;//WE ARE HERE 
    // const note=req.session.note;
-    console.log('try note_id_prod:', note_id_prod);
-   //const note_id = req.params.id;
-  // console.log('try req.paras.id', req.params.id);
-    note_model.findOne({
-        _id: note_id_prod
-    }).then((note) => {
-        //res.send(note.text);
-        //console.log('try note1_id', note_id);
-        console.log('try note1', note);
+    console.log('req.session.note:', note);
+   
         let new_product = product_model({
 
-            product_name:req.body.product});
-    //});
-    //or 
-    //const note = req.note; 
-   // console.log('note.text', req.note_id)
-   //console.log('try note', note)
-    //console.log('note_id', note_id)
-
-  //  const note_id_to_add_product = req.body.note_id;
-  //  console.log('note_id', req.body.note_id)
-    //let new_product = product_model({
-        //after this to change
-     //   product_name:req.body.product //присваивает имя продукта с input text
-        
-    //});
+          product_name:req.body.product});
+    
              console.log('new product', new_product)
             new_product.save().then(() => {
                 console.log('product saved');
@@ -253,7 +285,7 @@ app.post('/add-product', (req, res, next) => {
             
        // });
         //});
-    });
+    
 });
 
 
