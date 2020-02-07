@@ -4,8 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node app-08-sessions-mongo-product.js",
-    "start-dev": "nodemon app-08-sessions-mongo-product.js"
+    "start": "node app-07-organize-views.js",
+    "start-dev": "nodemon app-07-organize-views.js"
   },
   "author": "",
   "license": "ISC",

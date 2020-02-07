@@ -5,18 +5,49 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const product_schema = new Schema({
+    product_name: {
+        type: String,
+        required: true
+    },
+    //amount: {
+    //    type: Number,
+    //    required: true  
+   // },
 
-//Models
+   // picture: {
+   //     type: jpg,
+   //     required: true  
+   // }
 
-const user_model = require('./models/user_model.js');
-const note_model = require('./models/note_model.js');
+});
+const note_schema = new Schema({
+    text: {
+        type: String,
+        required: true
+    },
+    products: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'product',
+        req: true
+    }]
+});
+const product_model = new mongoose.model('product', product_schema);
+const note_model = new mongoose.model('note', note_schema);
 
 
-//Views
-
-const note_views = require('./views/note-views.js');
-const auth_views = require('./views/auth-views.js');
-
+const user_schema = new Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    notes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'note',
+        req: true
+    }]
+});
+const user_model = mongoose.model('user', user_schema);
 let app = express();
 
 app.use(body_parser.urlencoded({
@@ -65,16 +96,44 @@ app.get('/', is_logged_handler, (req, res, next) => {
         .execPopulate()
         .then(() => {
             console.log('user:', user);
-            let data = {                        //new
-                user_name: user.name,           //new
-                notes: user.notes               //new
-            };                                  //new
-            let html = note_views.notes_view(data);//new
-            console.log('html:', html) //new
-            res.send();
+            res.write(`
+        <html>
+        <body>
+            Logged in as user: ${user.name}
+            <form action="/logout" method="POST">
+                <button type="submit">Log out</button>
+            </form>`);
+            //<input type="hidden" name="note_id" value="${note._id}">
+            user.notes.forEach((note) => {
+                res.write(note.text);
+                res.write(`
+                <form action="delete-note" method="POST">
+                    <input type="hidden" name="note_id" value="${note._id}">
+                    <button type="submit">Delete note</button>
+                </form>
+                <form action="check-note" method="POST">
+                
+                <button type="submit">check note</button>
+            </form>
+                `);
+            });
+
+            res.write(`
+            <form action="/add-note" method="POST">
+                <input type="text" name="note">
+                <button type="submit">Add note</button>
+            </form>
+            
+    
+        </html>
+        </body>
+        `);
+            res.end();
         });
 });
-
+app.post('/check-note', (req, res, next) => {
+    res.redirect('/note/:id');
+});
 app.post('/delete-note', (req, res, next) => {
     const user = req.user;
     const note_id_to_delete = req.body.note_id;
@@ -100,6 +159,7 @@ app.get('/note/:id', (req, res, next) => {
     }).then((note) => {
         res.send(note.text);
     });
+    res.write(`hello hello`);
 });
 
 app.post('/add-note', (req, res, next) => {
@@ -124,7 +184,21 @@ app.post('/logout', (req, res, next) => {
 
 app.get('/login', (req, res, next) => {
     console.log('user: ', req.session.user)
-    res.send(auth_views.login_view());    //new
+    res.write(`
+    <html>
+    <body>
+        <form action="/login" method="POST">
+            <input type="text" name="user_name">
+            <button type="submit">Log in</button>
+        </form>
+        <form action="/register" method="POST">
+            <input type="text" name="user_name">
+            <button type="submit">Register</button>
+        </form>
+    </body>
+    <html>
+    `);
+    res.end();
 });
 
 app.post('/login', (req, res, next) => {
@@ -172,8 +246,9 @@ app.use((req, res, next) => {
 });
 
 //Shutdown server CTRL + C in terminal
+//Shutdown server CTRL + C in terminal
 
-const mongoose_url = 'mongodb+srv://db-user:1KRO2OhneATkq0Ke@cluster0-soknu.mongodb.net/test?retryWrites=true&w=majority';
+const mongoose_url = 'mongodb+srv://memoappdb:kcggD3xODFWO7xZs@cluster0-i69qr.mongodb.net/test?retryWrites=true&w=majority';
 
 mongoose.connect(mongoose_url, {
     useUnifiedTopology: true,
