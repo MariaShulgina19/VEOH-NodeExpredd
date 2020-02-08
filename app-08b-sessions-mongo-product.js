@@ -16,7 +16,7 @@ const product_schema = new Schema({
    // },
 
    // picture: {
-   //     type: jpg,
+   //     type: String,
    //     required: true  
    // }
 
@@ -85,6 +85,8 @@ const is_logged_handler = (req, res, next) => {
     next();
 };
 
+
+
 app.use((req, res, next) => {
     if (!req.session.user) {
         return next();
@@ -131,30 +133,26 @@ app.get('/', is_logged_handler, (req, res, next) => {
                 .then(() => {
                     console.log(' here is note:', note);
 
-
-                    res.write(note.text);
-                    res.write(`Products:`);
-                           note.products.forEach((product) => {
-
-                            res.write(product.product_name)
-                                                       });
-
-                        //<input type="hidden" name="note_id" value="${note._id}">
-                        res.write(`
-                        <form action="add-product" method="POST">
-                                <input type="text" name="product"   >
-                                <input type="hidden" name="note_id_prod" value="${note._id}">
-                                <button type="submit">Add product </button>
-                        </form>
-                        `);
+                    res.write(`
+                    <div >
+                    ${note.text}
+                    <form action="check-note" method="POST">
+                    <input type="text" name="note_id_check" value="${note._id}">
+                    <button type="submit">check note</button>
+                </form>
+                    </div>
+                    
+                    `);
+                    
+                  
                         res.write(`
                         <form action="delete-note" method="POST">
-                            <input type="hidden" name="note_id" value="${note._id}">
+                            <input type="text" name="note_id" value="${note._id}">
                             <button type="submit">Delete note</button>
                         </form>
-                        `);
+                         `);
 
-                             }); //end of populate notes.populate('products')
+                              }); 
                        
             });
 
@@ -172,9 +170,20 @@ app.get('/', is_logged_handler, (req, res, next) => {
         });
 });
 
+app.post('/check-note', (req, res, next) => {
+    const user = req.user;
+    const note_id_to_check= req.body.note_id_check; 
+    id=note_id_to_check; 
+    console.log('note to check', note_id_to_check)
+    
+    
+    res.redirect('/note/'+ id); 
+    });
+
 app.post('/delete-note', (req, res, next) => {
     const user = req.user;
-    const note_id_to_delete = req.body.note_id;
+    const note_id_to_delete = req.body.note_id; 
+    
 
     //Remove note from user.notes
     const updated_notes = user.notes.filter((note_id) => {
@@ -190,12 +199,39 @@ app.post('/delete-note', (req, res, next) => {
     });
 });
 
+app.post('/note/delete-product', (req, res, next) => {
+    const user = req.user;
+    const product_id_to_delete = req.body.product_id; 
+    const note_id_to_delete_product=req.body.note_id_to_delete_product;
+    id=note_id_to_delete_product
+    //ADD TO SEARCH NOTE 8.2.2020
+    console.log('note:', note_id_to_delete_product);
+    note_model.findOne({
+        _id: note_id_to_delete_product
+     }).then((note) => {
+          req.note = note;
+
+    //Remove productnote from notes.products
+    const updated_products = note.products.filter((product_id) => {
+        return product_id != product_id_to_delete;
+    });
+    note.products = updated_products;
+
+    //Remove product object from database
+    note.save().then(() => {
+        product_model.findByIdAndRemove(product_id_to_delete).then(() => {
+            res.redirect('/note/' + id);
+        });
+    });
+    });
+});
+
 app.get('/note/:id', (req, res, next) => {
     const note_id = req.params.id;
     note_model.findOne({
         _id: note_id
      }).then((note) => {
-          req.note = note;
+          req.note = note; 
         console.log ('inside the note')
         res.write(`
         <html>
@@ -207,20 +243,40 @@ app.get('/note/:id', (req, res, next) => {
                 .then(() => {
                     console.log(' here is note:', note);
 
-                    res.write(` Note: ${note.text}`)
+                    res.write(`
+                    
+                    <div> 
+                     ${note.text}
+                    
+                     
+
+                    </div>    
+                         `);
 
                    
                     res.write(`   Your Products:`);
-                    note.products.forEach((product) => {
+                    note.products.forEach((product) => { 
+                        res.write(`
+                          <div> 
+                        ${product.product_name}
 
-                        res.write(product.product_name)
-                                                   });
+                        <form action="delete-product" method="POST">
+                        <input type="text" name="product_id" value="${product._id}">
+                        <input type="text" name="note_id_to_delete_product" value="${note._id}">
+                        <button type="submit">Delete product</button>
+                    </form>
+                    </div> 
+                    `);
+                 });
+
                  res.write(`
-                    
+                          <div>                         
                         <form action="add-product" method="POST">
                                 <input type="text" name="product"   >
+                                <input type="text" name="note_id_prod" value="${note._id}">
                             <button type="submit">Add product </button>
                         </form>
+                        </div>
                     
                     </body>
                     </html>
@@ -252,28 +308,34 @@ app.post('/add-note', (req, res, next) => {
 });
 
 app.post('/note/add-product', (req, res, next) => {
-    //const user = req.user;
-    const note= req.note;
+    const user = req.user;
+    const note_id_prod= req.body.note_id_prod; 
+    id=note_id_prod; 
   // const note_id_prod = req.body.note_id_prod;//WE ARE HERE 
    // const note=req.session.note;
-    console.log('req.session.note:', note);
+    console.log('note:', note_id_prod);
+    note_model.findOne({
+        _id: note_id_prod
+     }).then((note) => {
+          req.note = note;
+          
    
         let new_product = product_model({
 
-          product_name:req.body.product});
+        product_name:req.body.product});
     
-             console.log('new product', new_product)
-            new_product.save().then(() => {
+         console.log('new product', new_product)
+        new_product.save().then(() => {
                 console.log('product saved');
-                console.log('try note', note);
+                console.log('try note', note_id_prod);
          //added tha last
       // note_model.findById(note_id_to_add_product).then((note) => {
                 note.products.push(new_product);
                 note.save().then(() => {
                 user.save().then(() => {
            console.log('product pushed');
-
-             return res.redirect('/');
+             });
+             return res.redirect('/note/'+ id);
             });
             });
         });
@@ -308,7 +370,7 @@ app.get('/login', (req, res, next) => {
             <button type="submit">Register</button>
         </form>
     </body>
-    <html>
+    <html>  
     `);
     res.end(); 
 });

@@ -109,21 +109,21 @@ app.get('/', is_logged_handler, (req, res, next) => {
                 note.populate('products')
                 .execPopulate()
                 .then(() => {
-                    console.log(' here is note:', note);
+                    console.log('note:', note);
 
 
-                    res.write(note.text);
-                    res.write(`Products:`);
-                           note.products.forEach((product) => {
+                        res.write(note.text);
+                        res.write(`Products:`);
+                        note.products.forEach((product) => {
 
                             res.write(product.product_name)
-                                                       });
+                                                        });
 
-                        //<input type="hidden" name="note_id" value="${note._id}">
+                        
                         res.write(`
                         <form action="add-product" method="POST">
                                 <input type="text" name="product"   >
-                                <input type="hidden" name="note_id_prod" value="${note._id}">
+                                <input type="hidden" name="note_id" value="${note._id}">
                                 <button type="submit">Add product </button>
                         </form>
                         `);
@@ -198,53 +198,34 @@ app.post('/add-note', (req, res, next) => {
         });
     });
 });
-
 app.post('/add-product', (req, res, next) => {
     const user = req.user;
-    //how to identify write note??
-   const note_id_prod = req.body.note_id_prod;//if to use it is crcshuíng
-   // const note=req.session.note;
-    console.log('try note_id_prod:', note_id_prod);
-   //const note_id = req.params.id;
-  // console.log('try req.paras.id', req.params.id);
-    note_model.findOne({
-        _id: note_id_prod
-    }).then((note) => {
-        //res.send(note.text);
-        //console.log('try note1_id', note_id);
-        console.log('try note1', note);
-        let new_product = product_model({
-
-            product_name:req.body.product});
-    //});
+   const note = req.body.note_id;//WE ARE HERE
     //or 
     //const note = req.note; 
    // console.log('note.text', req.note_id)
-   //console.log('try note', note)
+   console.log('try note', note)
     //console.log('note_id', note_id)
 
   //  const note_id_to_add_product = req.body.note_id;
   //  console.log('note_id', req.body.note_id)
-    //let new_product = product_model({
+    let new_product = product_model({
         //after this to change
-     //   product_name:req.body.product //присваивает имя продукта с input text
+        product_name:req.body.product //присваивает имя продукта с input text
         
-    //});
-             console.log('new product', new_product)
-            new_product.save().then(() => {
-                console.log('product saved');
-                console.log('try note', note);
+    });
+    console.log('new product', new_product)
+    new_product.save().then(() => {
+        console.log('product saved');
+        console.log('try note', note);
          //added tha last
       // note_model.findById(note_id_to_add_product).then((note) => {
-                note.products.push(new_product);
-                note.save().then(() => {
-                user.save().then(() => {
-           console.log('product pushed');
+            note.products.push(new_product);
+            note.save().then(() => {
+           // console.log('note', note)
+           return res.redirect('/');
 
-             return res.redirect('/');
             });
-            });
-        });
        // });
         //note.products.push(new_product); //does not work ..ca
         //note.save();
@@ -255,7 +236,6 @@ app.post('/add-product', (req, res, next) => {
         //});
     });
 });
-
 
 app.post('/logout', (req, res, next) => {
     req.session.destroy();
@@ -278,7 +258,7 @@ app.get('/login', (req, res, next) => {
     </body>
     <html>
     `);
-    res.end(); 
+    res.end();
 });
 
 app.post('/login', (req, res, next) => {

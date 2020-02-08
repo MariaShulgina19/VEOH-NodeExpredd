@@ -36,7 +36,7 @@ app.use(session({
 let users = [];
 
 app.use((req, res, next) => {
-    console.log(`path: ${req.path}`);
+    console.log(`${req.method}path: ${req.path}`); //showing what it is doing
     next();
 });
 
